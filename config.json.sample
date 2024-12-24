@@ -1,0 +1,10 @@
+{
+  "accounts": [
+    {
+      "username": "example_account",
+      "lastFetch": null,
+      "maxItems": 100
+    }
+  ],
+  "fetchInterval": "1d"
+} 

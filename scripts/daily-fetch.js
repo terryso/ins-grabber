@@ -20,7 +20,8 @@ async function dailyFetch() {
         id: account.username,
         lastFetch: account.lastFetch,
         path: process.cwd(),
-        proxy: 'http://127.0.0.1:7890'
+        proxy: 'http://127.0.0.1:7890',
+        maxItems: account.maxItems
       });
 
       await inst.init();

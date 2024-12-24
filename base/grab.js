@@ -34,16 +34,37 @@ export class BaseGrab extends Request {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    for (const item of resultList) {
-      const ext = item.type === 'video' ? '.mp4' : '.jpg';
-      const filename = path.join(dir, `${item.id}${ext}`);
+    // 获取已下载的文件列表
+    const existingFiles = new Set(fs.readdirSync(dir));
+    const downloadedIds = new Set();
 
-      if (!fs.existsSync(filename)) {
+    for (const item of resultList) {
+      try {
+        const ext = item.type === 'video' ? '.mp4' : '.jpg';
+        const createDate = new Date(item.createTime);
+        // 使用时间戳和ID组合作为文件名，确保唯一性
+        const filename = `${createDate.getTime()}_${item.id}${ext}`;
+        const filepath = path.join(dir, filename);
+
+        // 检查文件是否已存在（通过ID）
+        const isDuplicate = Array.from(existingFiles).some(file => {
+          const fileId = file.split('_')[1]?.split('.')[0];
+          return fileId === item.id;
+        });
+
+        if (isDuplicate || downloadedIds.has(item.id)) {
+          console.log(`跳过已下载的文件: ${item.id}`);
+          continue;
+        }
+
         console.log(`下载: ${filename}`);
         const response = await this.fetch(item.url);
         const buffer = await response.buffer();
-        fs.writeFileSync(filename, buffer);
+        fs.writeFileSync(filepath, buffer);
+        downloadedIds.add(item.id);
         await sleep(1000);
+      } catch (e) {
+        console.error(`下载失败: ${item.id}`, e);
       }
     }
   }

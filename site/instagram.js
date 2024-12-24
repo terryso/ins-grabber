@@ -9,6 +9,8 @@ export class InstagramGrab extends BaseGrab {
     this.lastFetch = o.lastFetch ? new Date(o.lastFetch) : null;
     this.baseUrl = 'https://www.instagram.com/';
     this.id = o.id;
+    this.maxItems = o.maxItems || Infinity;
+    this.fetchedCount = 0;
   }
 
   async init() {
@@ -26,7 +28,7 @@ export class InstagramGrab extends BaseGrab {
           return this;
         }
       } catch (e) {
-        console.log('解析共享数据失败:', e);
+        // 静默失败，继续尝试其他方法
       }
     }
 
@@ -46,44 +48,67 @@ export class InstagramGrab extends BaseGrab {
       }
     }
 
+    // 保存调试文件但不输出路径
     const debugFile = path.join(this.path, 'debug.html');
     fs.writeFileSync(debugFile, html);
-    console.error(`页面内容已保存到: ${debugFile}`);
     
     throw new Error('获取用户ID失败');
   }
 
+  async start() {
+    const resultList = [];
+    let nextData = null;
+
+    do {
+      const result = await this.getResultList(nextData);
+      resultList.push(...result.resultList);
+      this.fetchedCount += result.resultList.length;
+      nextData = result.nextData;
+      
+      if (this.fetchedCount >= this.maxItems) {
+        console.log(`已达到最大获取条数限制: ${this.maxItems}`);
+        break;
+      }
+      
+      if (nextData) {
+        await sleep(1000);
+      }
+    } while (nextData);
+
+    await this.download(resultList);
+    return resultList;
+  }
+
   async getResultList(nextData, tryCount = 0) {
-    const variables = {
-      id: this.userId,
-      first: 50,
-      after: nextData?.page_info?.end_cursor
-    };
+    const remainingItems = this.maxItems - this.fetchedCount;
+    const count = Math.min(50, remainingItems);
+
+    if (count <= 0) {
+      return {
+        resultList: [],
+        nextData: null
+      };
+    }
 
     const response = await this.fetch(
-      `${this.baseUrl}graphql/query/?query_hash=e769aa130647d2354c40ea6a439bfc08&variables=${encodeURIComponent(
-        JSON.stringify(variables)
-      )}`
+      `${this.baseUrl}api/v1/feed/user/${this.userId}/?count=${count}${nextData ? `&max_id=${nextData.next_max_id}` : ''}`,
+      {
+        headers: {
+          'x-ig-app-id': '936619743392459'
+        }
+      }
     );
 
     const data = await response.json();
-    
-    console.log('API响应数据:', JSON.stringify(data, null, 2));
-    
-    if(data.data?.user?.edge_owner_to_timeline_media) {
-      const { edges, page_info } = data.data.user.edge_owner_to_timeline_media;
-      
-      if (edges.length > 0) {
-        console.log('第一个节点数据:', JSON.stringify(edges[0].node, null, 2));
-      }
-      
-      if(this.lastFetch) {
-        const allOld = edges.every(edge => {
-          const createTime = new Date(edge.node.taken_at_timestamp * 1000);
+
+    if (data.items && Array.isArray(data.items)) {
+      if (this.lastFetch) {
+        const allOld = data.items.every(item => {
+          const createTime = new Date(item.taken_at * 1000);
           return createTime <= this.lastFetch;
         });
-        
-        if(allOld) {
+
+        if (allOld) {
           return {
             resultList: [],
             nextData: null
@@ -92,9 +117,9 @@ export class InstagramGrab extends BaseGrab {
       }
 
       return {
-        resultList: this.eachEdges(edges),
-        nextData: page_info.has_next_page ? {
-          page_info
+        resultList: this.eachItems(data.items),
+        nextData: data.more_available ? {
+          next_max_id: data.next_max_id
         } : null
       };
     }
@@ -107,31 +132,30 @@ export class InstagramGrab extends BaseGrab {
     throw new Error('获取数据失败');
   }
 
-  eachEdges(edges) {
+  eachItems(items) {
     const resultList = [];
-    
-    for(const edge of edges) {
+
+    for (const item of items) {
       try {
-        const node = edge.node;
-        const createTime = new Date(node.taken_at_timestamp * 1000);
-        
-        if(this.lastFetch && createTime <= this.lastFetch) {
+        const createTime = new Date(item.taken_at * 1000);
+
+        if (this.lastFetch && createTime <= this.lastFetch) {
           continue;
         }
 
-        if (node.__typename === 'GraphSidecar') {
-          node.edge_sidecar_to_children.edges.forEach(item => {
+        if (item.carousel_media) {
+          item.carousel_media.forEach(media => {
             try {
-              resultList.push(this.formatNode(item.node));
+              resultList.push(this.formatMedia(media, item.taken_at));
             } catch (e) {
-              console.error(`处理多图项目失败:`, e);
+              console.error(`处理多媒体项目失败: ${item.id}`);
             }
           });
         } else {
-          resultList.push(this.formatNode(node));
+          resultList.push(this.formatMedia(item, item.taken_at));
         }
       } catch (e) {
-        console.error(`处理图片项目失败:`, e);
+        console.error(`处理项目失败: ${item.id}`);
         continue;
       }
     }
@@ -139,27 +163,27 @@ export class InstagramGrab extends BaseGrab {
     return resultList;
   }
 
-  formatNode(node) {
-    // 验证时间戳
+  formatMedia(media, takenAt) {
     let createTime;
     try {
-      const timestamp = parseInt(node.taken_at_timestamp);
+      const timestamp = parseInt(takenAt);
       if (isNaN(timestamp) || timestamp <= 0) {
-        console.warn(`无效的时间戳: ${node.taken_at_timestamp}, 使用当前时间`);
         createTime = new Date().toISOString();
       } else {
         createTime = new Date(timestamp * 1000).toISOString();
       }
     } catch (e) {
-      console.warn(`时间戳处理错误: ${e.message}, 使用当前时间`);
       createTime = new Date().toISOString();
     }
 
+    const isVideo = media.media_type === 2 || media.video_versions;
     return {
-      id: node.id,
+      id: media.id,
       createTime,
-      type: node.__typename === 'GraphVideo' ? 'video' : 'image',
-      url: node.__typename === 'GraphVideo' ? node.video_url : node.display_url
+      type: isVideo ? 'video' : 'image',
+      url: isVideo ? 
+        (media.video_versions?.[0]?.url || media.video_url) : 
+        (media.image_versions2?.candidates?.[0]?.url || media.display_url)
     };
   }
 } 
