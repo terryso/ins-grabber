@@ -5,6 +5,7 @@ export class Request {
   constructor(o = {}) {
     this.proxy = o.proxy;
     this.cookie = o.cookie;
+    this.timeout = o.timeout || 30000; // 默认30秒超时
     this.headers = {
       'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'accept': 'text/html,application/json,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -31,7 +32,8 @@ export class Request {
       headers: {
         ...this.headers,
         ...options.headers
-      }
+      },
+      timeout: this.timeout
     };
 
     if (this.proxy) {
@@ -42,6 +44,17 @@ export class Request {
       reqOptions.headers.cookie = this.cookie;
     }
 
-    return fetch(url, reqOptions);
+    try {
+      const response = await fetch(url, reqOptions);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response;
+    } catch (error) {
+      if (error.type === 'request-timeout') {
+        throw new Error(`请求超时 (${this.timeout}ms): ${url}`);
+      }
+      throw error;
+    }
   }
 } 

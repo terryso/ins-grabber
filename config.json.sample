@@ -6,5 +6,6 @@
       "maxItems": 100
     }
   ],
-  "fetchInterval": "1d"
+  "fetchInterval": "1d",
+  "timeout": 30000
 } 

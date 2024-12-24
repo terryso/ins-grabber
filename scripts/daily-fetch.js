@@ -21,7 +21,8 @@ async function dailyFetch() {
         lastFetch: account.lastFetch,
         path: process.cwd(),
         proxy: 'http://127.0.0.1:7890',
-        maxItems: account.maxItems
+        maxItems: account.maxItems,
+        timeout: config.timeout
       });
 
       await inst.init();
