@@ -1,0 +1,12 @@
+{
+  "name": "ins-grabber",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^3.3.0",
+    "https-proxy-agent": "^7.0.0"
+  },
+  "scripts": {
+    "start": "node scripts/daily-fetch.js"
+  }
+} 
