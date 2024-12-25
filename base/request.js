@@ -37,6 +37,7 @@ export class Request {
     };
 
     if (this.proxy) {
+      console.log(`使用代理: ${this.proxy}`);
       reqOptions.agent = new HttpsProxyAgent(this.proxy);
     }
 
@@ -53,6 +54,9 @@ export class Request {
     } catch (error) {
       if (error.type === 'request-timeout') {
         throw new Error(`请求超时 (${this.timeout}ms): ${url}`);
+      }
+      if (this.proxy && error.code === 'ECONNREFUSED') {
+        throw new Error(`代理连接失败: ${this.proxy}`);
       }
       throw error;
     }

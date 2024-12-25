@@ -22,7 +22,7 @@ program
   .option('-u, --username <username>', 'Single account username')
   .option('-t, --types <types>', 'Media types to download (image,video)', 'image,video')
   .option('-m, --max-items <number>', 'Maximum items to download', '100')
-  .option('-p, --proxy <url>', 'Proxy URL', 'http://127.0.0.1:7890')
+  .option('-p, --proxy <url>', 'Proxy URL (optional)')
   .option('--timeout <ms>', 'Request timeout in milliseconds', '30000')
   .action(async (options) => {
     try {

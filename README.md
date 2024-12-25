@@ -58,6 +58,6 @@ ins-grab download --help
 - `-u, --username`: Single account username
 - `-t, --types`: Media types to download (image,video)
 - `-m, --max-items`: Maximum items to download
-- `-p, --proxy`: Proxy URL
+- `-p, --proxy`: Proxy URL (optional)
 - `--timeout`: Request timeout in milliseconds
 
