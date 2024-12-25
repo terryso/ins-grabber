@@ -8,6 +8,7 @@ export class BaseGrab extends Request {
     super(o);
     this.id = o.id;
     this.path = o.path || process.cwd();
+    this.mediaTypes = new Set(o.mediaTypes || ['image', 'video']);
   }
 
   async start() {
@@ -34,19 +35,18 @@ export class BaseGrab extends Request {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // 获取已下载的文件列表
     const existingFiles = new Set(fs.readdirSync(dir));
     const downloadedIds = new Set();
 
-    for (const item of resultList) {
+    const filteredList = resultList.filter(item => this.mediaTypes.has(item.type));
+
+    for (const item of filteredList) {
       try {
         const ext = item.type === 'video' ? '.mp4' : '.jpg';
         const createDate = new Date(item.createTime);
-        // 使用时间戳和ID组合作为文件名，确保唯一性
         const filename = `${createDate.getTime()}_${item.id}${ext}`;
         const filepath = path.join(dir, filename);
 
-        // 检查文件是否已存在（通过ID）
         const isDuplicate = Array.from(existingFiles).some(file => {
           const fileId = file.split('_')[1]?.split('.')[0];
           return fileId === item.id;
@@ -57,7 +57,7 @@ export class BaseGrab extends Request {
           continue;
         }
 
-        console.log(`下载: ${filename}`);
+        console.log(`下载${item.type === 'video' ? '视频' : '图片'}: ${filename}`);
         const response = await this.fetch(item.url);
         const buffer = await response.buffer();
         fs.writeFileSync(filepath, buffer);

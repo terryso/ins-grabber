@@ -22,7 +22,8 @@ async function dailyFetch() {
         path: process.cwd(),
         proxy: 'http://127.0.0.1:7890',
         maxItems: account.maxItems,
-        timeout: config.timeout
+        timeout: config.timeout,
+        mediaTypes: account.mediaTypes || ['image', 'video']  // 默认下载所有类型
       });
 
       await inst.init();

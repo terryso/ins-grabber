@@ -2,11 +2,35 @@
   "name": "ins-grabber",
   "version": "1.0.0",
   "type": "module",
+  "bin": {
+    "ins-grab": "./bin/cli.js"
+  },
   "dependencies": {
     "node-fetch": "^3.3.0",
-    "https-proxy-agent": "^7.0.0"
+    "https-proxy-agent": "^7.0.0",
+    "commander": "^11.1.0"
   },
   "scripts": {
     "start": "node scripts/daily-fetch.js"
-  }
+  },
+  "files": [
+    "bin",
+    "base",
+    "site",
+    "scripts"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/terryso/ins-grabber.git"
+  },
+  "keywords": [
+    "instagram",
+    "downloader",
+    "cli"
+  ],
+  "author": "terryso",
+  "license": "MIT"
 } 

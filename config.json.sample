@@ -3,7 +3,8 @@
     {
       "username": "example_account",
       "lastFetch": null,
-      "maxItems": 100
+      "maxItems": 100,
+      "mediaTypes": ["image", "video"]
     }
   ],
   "fetchInterval": "1d",
