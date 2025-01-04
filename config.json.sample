@@ -8,5 +8,6 @@
     }
   ],
   "fetchInterval": "1d",
-  "timeout": 30000
+  "timeout": 30000,
+  "cookie": "ig_did=...; csrftoken=...; mid=...; ds_user_id=...; sessionid=..."
 } 

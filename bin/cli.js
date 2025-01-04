@@ -34,7 +34,8 @@ program
           proxy: options.proxy,
           timeout: parseInt(options.timeout),
           maxItems: parseInt(options.maxItems),
-          mediaTypes: options.types.split(',')
+          mediaTypes: options.types.split(','),
+          cookie: config.cookie
         });
 
         await inst.init();
@@ -60,7 +61,8 @@ program
               proxy: options.proxy,
               maxItems: account.maxItems,
               timeout: parseInt(options.timeout),
-              mediaTypes: account.mediaTypes
+              mediaTypes: account.mediaTypes,
+              cookie: config.cookie
             });
 
             await inst.init();

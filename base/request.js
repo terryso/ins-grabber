@@ -5,11 +5,11 @@ export class Request {
   constructor(o = {}) {
     this.proxy = o.proxy;
     this.cookie = o.cookie;
-    this.timeout = o.timeout || 30000; // 默认30秒超时
+    this.timeout = o.timeout || 30000;
     this.headers = {
       'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'accept': 'text/html,application/json,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-      'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      'accept-language': 'en-US,en;q=0.9',
       'cache-control': 'no-cache',
       'pragma': 'no-cache',
       'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
@@ -20,10 +20,13 @@ export class Request {
       'sec-fetch-site': 'none',
       'sec-fetch-user': '?1',
       'upgrade-insecure-requests': '1',
-      'x-requested-with': 'XMLHttpRequest',
-      'x-instagram-ajax': '1',
-      'referer': 'https://www.instagram.com/'
+      'x-ig-app-id': '936619743392459',
+      'x-requested-with': 'XMLHttpRequest'
     };
+
+    if (!this.cookie) {
+      this.cookie = 'ig_did=...; csrftoken=...; mid=...; ds_user_id=...; sessionid=...';
+    }
   }
 
   async fetch(url, options = {}) {
@@ -31,7 +34,8 @@ export class Request {
       ...options,
       headers: {
         ...this.headers,
-        ...options.headers
+        ...options.headers,
+        cookie: this.cookie
       },
       timeout: this.timeout
     };
@@ -41,13 +45,12 @@ export class Request {
       reqOptions.agent = new HttpsProxyAgent(this.proxy);
     }
 
-    if (this.cookie) {
-      reqOptions.headers.cookie = this.cookie;
-    }
-
     try {
       const response = await fetch(url, reqOptions);
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Instagram认证失败，请检查cookie是否有效');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return response;
