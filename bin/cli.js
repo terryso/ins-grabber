@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
+import { config } from 'dotenv';
 import { program } from 'commander';
+
+// 加载.env文件中的环境变量
+config();
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -34,8 +38,7 @@ program
           proxy: options.proxy,
           timeout: parseInt(options.timeout),
           maxItems: parseInt(options.maxItems),
-          mediaTypes: options.types.split(','),
-          cookie: config.cookie
+          mediaTypes: options.types.split(',')
         });
 
         await inst.init();
@@ -61,8 +64,7 @@ program
               proxy: options.proxy,
               maxItems: account.maxItems,
               timeout: parseInt(options.timeout),
-              mediaTypes: account.mediaTypes,
-              cookie: config.cookie
+              mediaTypes: account.mediaTypes
             });
 
             await inst.init();
@@ -82,4 +84,4 @@ program
     }
   });
 
-program.parse(); 
+program.parse();

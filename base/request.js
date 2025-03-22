@@ -4,7 +4,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 export class Request {
   constructor(o = {}) {
     this.proxy = o.proxy;
-    this.cookie = o.cookie;
+    this.cookie = o.cookie || process.env.INSTAGRAM_COOKIE;
     this.timeout = o.timeout || 30000;
     this.headers = {
       'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -25,7 +25,7 @@ export class Request {
     };
 
     if (!this.cookie) {
-      this.cookie = 'ig_did=...; csrftoken=...; mid=...; ds_user_id=...; sessionid=...';
+      throw new Error('Instagram cookie未设置，请在环境变量INSTAGRAM_COOKIE中设置有效的cookie');
     }
   }
 
@@ -41,7 +41,7 @@ export class Request {
     };
 
     if (this.proxy) {
-      console.log(`使用代理: ${this.proxy}`);
+      // console.log(`使用代理: ${this.proxy}`);
       reqOptions.agent = new HttpsProxyAgent(this.proxy);
     }
 
@@ -49,6 +49,7 @@ export class Request {
       const response = await fetch(url, reqOptions);
       if (!response.ok) {
         if (response.status === 401) {
+          console.log(`cookie: ${this.cookie}`)
           throw new Error('Instagram认证失败，请检查cookie是否有效');
         }
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,4 +65,4 @@ export class Request {
       throw error;
     }
   }
-} 
+}
